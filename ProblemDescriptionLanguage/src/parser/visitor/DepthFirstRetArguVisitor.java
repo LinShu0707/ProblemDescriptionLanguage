@@ -145,8 +145,10 @@ public class DepthFirstRetArguVisitor<R, A> implements IRetArguVisitor<R, A> {
   /**
    * Visits a {@link Start} node, whose children are the following :
    * <p>
-   * f0 -> Expression()<br>
-   * f1 -> ";"<br>
+   * f0 -> InputSection()<br>
+   * f1 -> RequiredSection()<br>
+   * f2 -> OutputSection()<br>
+   * f3 -> <EOF><br>
    *
    * @param n - the node to visit
    * @param argu - the user argument
@@ -155,184 +157,275 @@ public class DepthFirstRetArguVisitor<R, A> implements IRetArguVisitor<R, A> {
   @Override
   public R visit(final Start n, final A argu) {
     R nRes = null;
-    // f0 -> Expression()
-    final Expression n0 = n.f0;
+    // f0 -> InputSection()
+    final InputSection n0 = n.f0;
     nRes = n0.accept(this, argu);
-    // f1 -> ";"
+    // f1 -> RequiredSection()
+    final RequiredSection n1 = n.f1;
+    nRes = n1.accept(this, argu);
+    // f2 -> OutputSection()
+    final OutputSection n2 = n.f2;
+    nRes = n2.accept(this, argu);
+    // f3 -> <EOF>
+    final NodeToken n3 = n.f3;
+    nRes = n3.accept(this, argu);
+    return nRes;
+  }
+
+  /**
+   * Visits a {@link InputSection} node, whose children are the following :
+   * <p>
+   * f0 -> <INPUT><br>
+   * f1 -> <EOL><br>
+   * f2 -> ( InputVarDef() )*<br>
+   *
+   * @param n - the node to visit
+   * @param argu - the user argument
+   * @return the user return information
+   */
+  @Override
+  public R visit(final InputSection n, final A argu) {
+    R nRes = null;
+    // f0 -> <INPUT>
+    final NodeToken n0 = n.f0;
+    nRes = n0.accept(this, argu);
+    // f1 -> <EOL>
+    final NodeToken n1 = n.f1;
+    nRes = n1.accept(this, argu);
+    // f2 -> ( InputVarDef() )*
+    final NodeListOptional n2 = n.f2;
+    if (n2.present()) {
+      for (int i = 0; i < n2.size(); i++) {
+        final INode nloeai = n2.elementAt(i);
+        nRes = nloeai.accept(this, argu);
+      }
+    }
+    return nRes;
+  }
+
+  /**
+   * Visits a {@link RequiredSection} node, whose children are the following :
+   * <p>
+   * f0 -> <REQUIRED><br>
+   * f1 -> <EOL><br>
+   *
+   * @param n - the node to visit
+   * @param argu - the user argument
+   * @return the user return information
+   */
+  @Override
+  public R visit(final RequiredSection n, final A argu) {
+    R nRes = null;
+    // f0 -> <REQUIRED>
+    final NodeToken n0 = n.f0;
+    nRes = n0.accept(this, argu);
+    // f1 -> <EOL>
     final NodeToken n1 = n.f1;
     nRes = n1.accept(this, argu);
     return nRes;
   }
 
   /**
-   * Visits a {@link Expression} node, whose child is the following :
+   * Visits a {@link OutputSection} node, whose children are the following :
    * <p>
-   * f0 -> AdditiveExpression()<br>
+   * f0 -> <OUTPUT><br>
+   * f1 -> <EOL><br>
    *
    * @param n - the node to visit
    * @param argu - the user argument
    * @return the user return information
    */
   @Override
-  public R visit(final Expression n, final A argu) {
+  public R visit(final OutputSection n, final A argu) {
     R nRes = null;
-    // f0 -> AdditiveExpression()
-    final AdditiveExpression n0 = n.f0;
+    // f0 -> <OUTPUT>
+    final NodeToken n0 = n.f0;
     nRes = n0.accept(this, argu);
+    // f1 -> <EOL>
+    final NodeToken n1 = n.f1;
+    nRes = n1.accept(this, argu);
     return nRes;
   }
 
   /**
-   * Visits a {@link AdditiveExpression} node, whose children are the following :
+   * Visits a {@link InputVarDef} node, whose children are the following :
    * <p>
-   * f0 -> MultiplicativeExpression()<br>
-   * f1 -> ( #0 ( %0 "+"<br>
-   * .. .. . .. | %1 "-" )<br>
-   * .. .. . #1 MultiplicativeExpression() )*<br>
+   * f0 -> <IDENTIFIER><br>
+   * f1 -> ":"<br>
+   * f2 -> [ TypeDef() ]<br>
+   * f3 -> [ RangeDef() ]<br>
+   * f4 -> <EOL><br>
    *
    * @param n - the node to visit
    * @param argu - the user argument
    * @return the user return information
    */
   @Override
-  public R visit(final AdditiveExpression n, final A argu) {
+  public R visit(final InputVarDef n, final A argu) {
     R nRes = null;
-    // f0 -> MultiplicativeExpression()
-    final MultiplicativeExpression n0 = n.f0;
+    // f0 -> <IDENTIFIER>
+    final NodeToken n0 = n.f0;
     nRes = n0.accept(this, argu);
-    // f1 -> ( #0 ( %0 "+"
-    // .. .. . .. | %1 "-" )
-    // .. .. . #1 MultiplicativeExpression() )*
-    final NodeListOptional n1 = n.f1;
-    if (n1.present()) {
-      for (int i = 0; i < n1.size(); i++) {
-        final INode nloeai = n1.elementAt(i);
-        final NodeSequence seq = (NodeSequence) nloeai;
-        // #0 ( %0 "+"
-        // .. | %1 "-" )
-        final INode seq1 = seq.elementAt(0);
-        final NodeChoice nch = (NodeChoice) seq1;
-        final INode ich = nch.choice;
-        switch (nch.which) {
-          case 0:
-            // %0 "+"
-            nRes = ich.accept(this, argu);
-            break;
-          case 1:
-            // %1 "-"
-            nRes = ich.accept(this, argu);
-            break;
-          default:
-            // should not occur !!!
-            break;
-        }
-        // #1 MultiplicativeExpression()
-        final INode seq2 = seq.elementAt(1);
-        nRes = seq2.accept(this, argu);
-      }
+    // f1 -> ":"
+    final NodeToken n1 = n.f1;
+    nRes = n1.accept(this, argu);
+    // f2 -> [ TypeDef() ]
+    final NodeOptional n2 = n.f2;
+    if (n2.present()) {
+      nRes = n2.accept(this, argu);
     }
-    return nRes;
-  }
-
-  /**
-   * Visits a {@link MultiplicativeExpression} node, whose children are the following :
-   * <p>
-   * f0 -> UnaryExpression()<br>
-   * f1 -> ( #0 ( %0 "*"<br>
-   * .. .. . .. | %1 "/"<br>
-   * .. .. . .. | %2 "%" )<br>
-   * .. .. . #1 UnaryExpression() )*<br>
-   *
-   * @param n - the node to visit
-   * @param argu - the user argument
-   * @return the user return information
-   */
-  @Override
-  public R visit(final MultiplicativeExpression n, final A argu) {
-    R nRes = null;
-    // f0 -> UnaryExpression()
-    final UnaryExpression n0 = n.f0;
-    nRes = n0.accept(this, argu);
-    // f1 -> ( #0 ( %0 "*"
-    // .. .. . .. | %1 "/"
-    // .. .. . .. | %2 "%" )
-    // .. .. . #1 UnaryExpression() )*
-    final NodeListOptional n1 = n.f1;
-    if (n1.present()) {
-      for (int i = 0; i < n1.size(); i++) {
-        final INode nloeai = n1.elementAt(i);
-        final NodeSequence seq = (NodeSequence) nloeai;
-        // #0 ( %0 "*"
-        // .. | %1 "/"
-        // .. | %2 "%" )
-        final INode seq1 = seq.elementAt(0);
-        final NodeChoice nch = (NodeChoice) seq1;
-        final INode ich = nch.choice;
-        switch (nch.which) {
-          case 0:
-            // %0 "*"
-            nRes = ich.accept(this, argu);
-            break;
-          case 1:
-            // %1 "/"
-            nRes = ich.accept(this, argu);
-            break;
-          case 2:
-            // %2 "%"
-            nRes = ich.accept(this, argu);
-            break;
-          default:
-            // should not occur !!!
-            break;
-        }
-        // #1 UnaryExpression()
-        final INode seq2 = seq.elementAt(1);
-        nRes = seq2.accept(this, argu);
-      }
+    // f3 -> [ RangeDef() ]
+    final NodeOptional n3 = n.f3;
+    if (n3.present()) {
+      nRes = n3.accept(this, argu);
     }
+    // f4 -> <EOL>
+    final NodeToken n4 = n.f4;
+    nRes = n4.accept(this, argu);
     return nRes;
   }
 
   /**
-   * Visits a {@link UnaryExpression} node, whose child is the following :
+   * Visits a {@link TypeDef} node, whose children are the following :
    * <p>
-   * f0 -> . %0 #0 "(" #1 Expression() #2 ")"<br>
-   * .. .. | %1 Identifier()<br>
-   * .. .. | %2 MyInteger()<br>
+   * f0 -> ( %0 <INT><br>
+   * .. .. | %1 <REAL><br>
+   * .. .. | %2 <BOOL><br>
+   * .. .. | %3 <CHAR><br>
+   * .. .. | %4 <STRING> )<br>
+   * f1 -> [ #0 "["<br>
+   * .. .. . #1 [ $0 Expression() $1 "~" $2 Expression() ]<br>
+   * .. .. . #2 "]" ]<br>
    *
    * @param n - the node to visit
    * @param argu - the user argument
    * @return the user return information
    */
   @Override
-  public R visit(final UnaryExpression n, final A argu) {
+  public R visit(final TypeDef n, final A argu) {
     R nRes = null;
-    // f0 -> . %0 #0 "(" #1 Expression() #2 ")"
-    // .. .. | %1 Identifier()
-    // .. .. | %2 MyInteger()
-    final NodeChoice nch = n.f0;
+    // f0 -> ( %0 <INT>
+    // .. .. | %1 <REAL>
+    // .. .. | %2 <BOOL>
+    // .. .. | %3 <CHAR>
+    // .. .. | %4 <STRING> )
+    final NodeChoice n0 = n.f0;
+    final NodeChoice nch = n0;
     final INode ich = nch.choice;
     switch (nch.which) {
       case 0:
-        // %0 #0 "(" #1 Expression() #2 ")"
-        final NodeSequence seq = (NodeSequence) ich;
-        // #0 "("
-        final INode seq1 = seq.elementAt(0);
-        nRes = seq1.accept(this, argu);
-        // #1 Expression()
-        final INode seq2 = seq.elementAt(1);
-        nRes = seq2.accept(this, argu);
-        // #2 ")"
-        final INode seq3 = seq.elementAt(2);
-        nRes = seq3.accept(this, argu);
+        // %0 <INT>
+        nRes = ich.accept(this, argu);
         break;
       case 1:
-        // %1 Identifier()
+        // %1 <REAL>
         nRes = ich.accept(this, argu);
         break;
       case 2:
-        // %2 MyInteger()
+        // %2 <BOOL>
         nRes = ich.accept(this, argu);
+        break;
+      case 3:
+        // %3 <CHAR>
+        nRes = ich.accept(this, argu);
+        break;
+      case 4:
+        // %4 <STRING>
+        nRes = ich.accept(this, argu);
+        break;
+      default:
+        // should not occur !!!
+        break;
+    }
+    // f1 -> [ #0 "["
+    // .. .. . #1 [ $0 Expression() $1 "~" $2 Expression() ]
+    // .. .. . #2 "]" ]
+    final NodeOptional n1 = n.f1;
+    if (n1.present()) {
+      final NodeSequence seq = (NodeSequence) n1.node;
+      // #0 "["
+      final INode seq1 = seq.elementAt(0);
+      nRes = seq1.accept(this, argu);
+      // #1 [ $0 Expression() $1 "~" $2 Expression() ]
+      final INode seq2 = seq.elementAt(1);
+      final NodeOptional opt = (NodeOptional) seq2;
+      if (opt.present()) {
+        final NodeSequence seq3 = (NodeSequence) opt.node;
+        // $0 Expression()
+        final INode seq4 = seq3.elementAt(0);
+        nRes = seq4.accept(this, argu);
+        // $1 "~"
+        final INode seq5 = seq3.elementAt(1);
+        nRes = seq5.accept(this, argu);
+        // $2 Expression()
+        final INode seq6 = seq3.elementAt(2);
+        nRes = seq6.accept(this, argu);
+      }
+      // #2 "]"
+      final INode seq7 = seq.elementAt(2);
+      nRes = seq7.accept(this, argu);
+    }
+    return nRes;
+  }
+
+  /**
+   * Visits a {@link RangeDef} node, whose children are the following :
+   * <p>
+   * f0 -> ( %0 "("<br>
+   * .. .. | %1 "[" )<br>
+   * f1 -> Expression()<br>
+   * f2 -> ","<br>
+   * f3 -> Expression()<br>
+   * f4 -> ( %0 ")"<br>
+   * .. .. | %1 "]" )<br>
+   *
+   * @param n - the node to visit
+   * @param argu - the user argument
+   * @return the user return information
+   */
+  @Override
+  public R visit(final RangeDef n, final A argu) {
+    R nRes = null;
+    // f0 -> ( %0 "("
+    // .. .. | %1 "[" )
+    final NodeChoice n0 = n.f0;
+    final NodeChoice nch = n0;
+    final INode ich = nch.choice;
+    switch (nch.which) {
+      case 0:
+        // %0 "("
+        nRes = ich.accept(this, argu);
+        break;
+      case 1:
+        // %1 "["
+        nRes = ich.accept(this, argu);
+        break;
+      default:
+        // should not occur !!!
+        break;
+    }
+    // f1 -> Expression()
+    final Expression n1 = n.f1;
+    nRes = n1.accept(this, argu);
+    // f2 -> ","
+    final NodeToken n2 = n.f2;
+    nRes = n2.accept(this, argu);
+    // f3 -> Expression()
+    final Expression n3 = n.f3;
+    nRes = n3.accept(this, argu);
+    // f4 -> ( %0 ")"
+    // .. .. | %1 "]" )
+    final NodeChoice n4 = n.f4;
+    final NodeChoice nch1 = n4;
+    final INode ich1 = nch1.choice;
+    switch (nch1.which) {
+      case 0:
+        // %0 ")"
+        nRes = ich1.accept(this, argu);
+        break;
+      case 1:
+        // %1 "]"
+        nRes = ich1.accept(this, argu);
         break;
       default:
         // should not occur !!!
@@ -342,38 +435,35 @@ public class DepthFirstRetArguVisitor<R, A> implements IRetArguVisitor<R, A> {
   }
 
   /**
-   * Visits a {@link Identifier} node, whose child is the following :
+   * Visits a {@link Expression} node, whose child is the following :
    * <p>
-   * f0 -> <IDENTIFIER><br>
+   * f0 -> . %0 <IDENTIFIER><br>
+   * .. .. | %1 <LITERAL><br>
    *
    * @param n - the node to visit
    * @param argu - the user argument
    * @return the user return information
    */
   @Override
-  public R visit(final Identifier n, final A argu) {
+  public R visit(final Expression n, final A argu) {
     R nRes = null;
-    // f0 -> <IDENTIFIER>
-    final NodeToken n0 = n.f0;
-    nRes = n0.accept(this, argu);
-    return nRes;
-  }
-
-  /**
-   * Visits a {@link MyInteger} node, whose child is the following :
-   * <p>
-   * f0 -> <INTEGER_LITERAL><br>
-   *
-   * @param n - the node to visit
-   * @param argu - the user argument
-   * @return the user return information
-   */
-  @Override
-  public R visit(final MyInteger n, final A argu) {
-    R nRes = null;
-    // f0 -> <INTEGER_LITERAL>
-    final NodeToken n0 = n.f0;
-    nRes = n0.accept(this, argu);
+    // f0 -> . %0 <IDENTIFIER>
+    // .. .. | %1 <LITERAL>
+    final NodeChoice nch = n.f0;
+    final INode ich = nch.choice;
+    switch (nch.which) {
+      case 0:
+        // %0 <IDENTIFIER>
+        nRes = ich.accept(this, argu);
+        break;
+      case 1:
+        // %1 <LITERAL>
+        nRes = ich.accept(this, argu);
+        break;
+      default:
+        // should not occur !!!
+        break;
+    }
     return nRes;
   }
 

@@ -1,10 +1,6 @@
-/AdditiveExpression.java
-/Expression.java
 /INode.java
 /INodeList.java
-/Identifier.java
-/MultiplicativeExpression.java
-/MyInteger.java
+/InputSection.java
 /NodeChoice.java
 /NodeList.java
 /NodeListOptional.java
@@ -12,5 +8,10 @@
 /NodeSequence.java
 /NodeTCF.java
 /NodeToken.java
+/OutputSection.java
+/RequiredSection.java
 /Start.java
-/UnaryExpression.java
+/InputVarDef.java
+/TypeDef.java
+/Expression.java
+/RangeDef.java
