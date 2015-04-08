@@ -179,6 +179,7 @@ public class DepthFirstVoidArguVisitor<A> implements IVoidArguVisitor<A> {
    * <p>
    * f0 -> <REQUIRED><br>
    * f1 -> <EOL><br>
+   * f2 -> ( RequiredCond() )*<br>
    *
    * @param n - the node to visit
    * @param argu - the user argument
@@ -191,6 +192,14 @@ public class DepthFirstVoidArguVisitor<A> implements IVoidArguVisitor<A> {
     // f1 -> <EOL>
     final NodeToken n1 = n.f1;
     n1.accept(this, argu);
+    // f2 -> ( RequiredCond() )*
+    final NodeListOptional n2 = n.f2;
+    if (n2.present()) {
+      for (int i = 0; i < n2.size(); i++) {
+        final INode nloeai = n2.elementAt(i);
+        nloeai.accept(this, argu);
+      }
+    }
   }
 
   /**
@@ -198,6 +207,7 @@ public class DepthFirstVoidArguVisitor<A> implements IVoidArguVisitor<A> {
    * <p>
    * f0 -> <OUTPUT><br>
    * f1 -> <EOL><br>
+   * f2 -> ( OutputExp() )*<br>
    *
    * @param n - the node to visit
    * @param argu - the user argument
@@ -210,16 +220,22 @@ public class DepthFirstVoidArguVisitor<A> implements IVoidArguVisitor<A> {
     // f1 -> <EOL>
     final NodeToken n1 = n.f1;
     n1.accept(this, argu);
+    // f2 -> ( OutputExp() )*
+    final NodeListOptional n2 = n.f2;
+    if (n2.present()) {
+      for (int i = 0; i < n2.size(); i++) {
+        final INode nloeai = n2.elementAt(i);
+        nloeai.accept(this, argu);
+      }
+    }
   }
 
   /**
    * Visits a {@link InputVarDef} node, whose children are the following :
    * <p>
    * f0 -> <IDENTIFIER><br>
-   * f1 -> ":"<br>
-   * f2 -> [ TypeDef() ]<br>
-   * f3 -> [ RangeDef() ]<br>
-   * f4 -> <EOL><br>
+   * f1 -> [ TypeDef() ]<br>
+   * f2 -> <EOL><br>
    *
    * @param n - the node to visit
    * @param argu - the user argument
@@ -229,101 +245,201 @@ public class DepthFirstVoidArguVisitor<A> implements IVoidArguVisitor<A> {
     // f0 -> <IDENTIFIER>
     final NodeToken n0 = n.f0;
     n0.accept(this, argu);
-    // f1 -> ":"
-    final NodeToken n1 = n.f1;
-    n1.accept(this, argu);
-    // f2 -> [ TypeDef() ]
-    final NodeOptional n2 = n.f2;
-    if (n2.present()) {
-      n2.accept(this, argu);
+    // f1 -> [ TypeDef() ]
+    final NodeOptional n1 = n.f1;
+    if (n1.present()) {
+      n1.accept(this, argu);
     }
-    // f3 -> [ RangeDef() ]
-    final NodeOptional n3 = n.f3;
-    if (n3.present()) {
-      n3.accept(this, argu);
-    }
-    // f4 -> <EOL>
-    final NodeToken n4 = n.f4;
-    n4.accept(this, argu);
+    // f2 -> <EOL>
+    final NodeToken n2 = n.f2;
+    n2.accept(this, argu);
   }
 
   /**
-   * Visits a {@link TypeDef} node, whose children are the following :
+   * Visits a {@link RequiredCond} node, whose children are the following :
    * <p>
-   * f0 -> ( %0 <INT><br>
-   * .. .. | %1 <REAL><br>
-   * .. .. | %2 <BOOL><br>
-   * .. .. | %3 <CHAR><br>
-   * .. .. | %4 <STRING> )<br>
-   * f1 -> [ #0 "["<br>
-   * .. .. . #1 [ $0 Expression() $1 "~" $2 Expression() ]<br>
-   * .. .. . #2 "]" ]<br>
+   * f0 -> ( %0 #0 <IDENTIFIER> #1 TypeDef()<br>
+   * .. .. | %1 Expression() )<br>
+   * f1 -> <EOL><br>
    *
    * @param n - the node to visit
    * @param argu - the user argument
    */
   @Override
-  public void visit(final TypeDef n, final A argu) {
-    // f0 -> ( %0 <INT>
-    // .. .. | %1 <REAL>
-    // .. .. | %2 <BOOL>
-    // .. .. | %3 <CHAR>
-    // .. .. | %4 <STRING> )
+  public void visit(final RequiredCond n, final A argu) {
+    // f0 -> ( %0 #0 <IDENTIFIER> #1 TypeDef()
+    // .. .. | %1 Expression() )
     final NodeChoice n0 = n.f0;
     final NodeChoice nch = n0;
     final INode ich = nch.choice;
     switch (nch.which) {
       case 0:
-        // %0 <INT>
-        ich.accept(this, argu);
+        // %0 #0 <IDENTIFIER> #1 TypeDef()
+        final NodeSequence seq = (NodeSequence) ich;
+        // #0 <IDENTIFIER>
+        final INode seq1 = seq.elementAt(0);
+        seq1.accept(this, argu);
+        // #1 TypeDef()
+        final INode seq2 = seq.elementAt(1);
+        seq2.accept(this, argu);
         break;
       case 1:
-        // %1 <REAL>
-        ich.accept(this, argu);
-        break;
-      case 2:
-        // %2 <BOOL>
-        ich.accept(this, argu);
-        break;
-      case 3:
-        // %3 <CHAR>
-        ich.accept(this, argu);
-        break;
-      case 4:
-        // %4 <STRING>
+        // %1 Expression()
         ich.accept(this, argu);
         break;
       default:
         // should not occur !!!
         break;
     }
-    // f1 -> [ #0 "["
-    // .. .. . #1 [ $0 Expression() $1 "~" $2 Expression() ]
-    // .. .. . #2 "]" ]
-    final NodeOptional n1 = n.f1;
-    if (n1.present()) {
-      final NodeSequence seq = (NodeSequence) n1.node;
-      // #0 "["
-      final INode seq1 = seq.elementAt(0);
-      seq1.accept(this, argu);
-      // #1 [ $0 Expression() $1 "~" $2 Expression() ]
-      final INode seq2 = seq.elementAt(1);
-      final NodeOptional opt = (NodeOptional) seq2;
-      if (opt.present()) {
-        final NodeSequence seq3 = (NodeSequence) opt.node;
-        // $0 Expression()
-        final INode seq4 = seq3.elementAt(0);
-        seq4.accept(this, argu);
-        // $1 "~"
-        final INode seq5 = seq3.elementAt(1);
-        seq5.accept(this, argu);
-        // $2 Expression()
-        final INode seq6 = seq3.elementAt(2);
-        seq6.accept(this, argu);
-      }
-      // #2 "]"
-      final INode seq7 = seq.elementAt(2);
-      seq7.accept(this, argu);
+    // f1 -> <EOL>
+    final NodeToken n1 = n.f1;
+    n1.accept(this, argu);
+  }
+
+  /**
+   * Visits a {@link OutputExp} node, whose children are the following :
+   * <p>
+   * f0 -> Expression()<br>
+   * f1 -> <EOL><br>
+   *
+   * @param n - the node to visit
+   * @param argu - the user argument
+   */
+  @Override
+  public void visit(final OutputExp n, final A argu) {
+    // f0 -> Expression()
+    final Expression n0 = n.f0;
+    n0.accept(this, argu);
+    // f1 -> <EOL>
+    final NodeToken n1 = n.f1;
+    n1.accept(this, argu);
+  }
+
+  /**
+   * Visits a {@link TypeDef} node, whose child is the following :
+   * <p>
+   * f0 -> . %0 #0 ":"<br>
+   * .. .. . .. #1 ( &0 <INT><br>
+   * .. .. . .. .. | &1 <REAL><br>
+   * .. .. . .. .. | &2 <BOOL><br>
+   * .. .. . .. .. | &3 <CHAR><br>
+   * .. .. . .. .. | &4 <STRING> )<br>
+   * .. .. . .. #2 [ $0 "["<br>
+   * .. .. . .. .. . $1 [ ?0 Expression() ?1 "~" ?2 Expression() ]<br>
+   * .. .. . .. .. . $2 "]" ]<br>
+   * .. .. . .. #3 [ RangeDef() ]<br>
+   * .. .. | %1 RangeDef()<br>
+   *
+   * @param n - the node to visit
+   * @param argu - the user argument
+   */
+  @Override
+  public void visit(final TypeDef n, final A argu) {
+    // f0 -> . %0 #0 ":"
+    // .. .. . .. #1 ( &0 <INT>
+    // .. .. . .. .. | &1 <REAL>
+    // .. .. . .. .. | &2 <BOOL>
+    // .. .. . .. .. | &3 <CHAR>
+    // .. .. . .. .. | &4 <STRING> )
+    // .. .. . .. #2 [ $0 "["
+    // .. .. . .. .. . $1 [ ?0 Expression() ?1 "~" ?2 Expression() ]
+    // .. .. . .. .. . $2 "]" ]
+    // .. .. . .. #3 [ RangeDef() ]
+    // .. .. | %1 RangeDef()
+    final NodeChoice nch = n.f0;
+    final INode ich = nch.choice;
+    switch (nch.which) {
+      case 0:
+        // %0 #0 ":"
+        // .. #1 ( &0 <INT>
+        // .. .. | &1 <REAL>
+        // .. .. | &2 <BOOL>
+        // .. .. | &3 <CHAR>
+        // .. .. | &4 <STRING> )
+        // .. #2 [ $0 "["
+        // .. .. . $1 [ ?0 Expression() ?1 "~" ?2 Expression() ]
+        // .. .. . $2 "]" ]
+        // .. #3 [ RangeDef() ]
+        final NodeSequence seq = (NodeSequence) ich;
+        // #0 ":"
+        final INode seq1 = seq.elementAt(0);
+        seq1.accept(this, argu);
+        // #1 ( &0 <INT>
+        // .. | &1 <REAL>
+        // .. | &2 <BOOL>
+        // .. | &3 <CHAR>
+        // .. | &4 <STRING> )
+        final INode seq2 = seq.elementAt(1);
+        final NodeChoice nch1 = (NodeChoice) seq2;
+        final INode ich1 = nch1.choice;
+        switch (nch1.which) {
+          case 0:
+            // &0 <INT>
+            ich1.accept(this, argu);
+            break;
+          case 1:
+            // &1 <REAL>
+            ich1.accept(this, argu);
+            break;
+          case 2:
+            // &2 <BOOL>
+            ich1.accept(this, argu);
+            break;
+          case 3:
+            // &3 <CHAR>
+            ich1.accept(this, argu);
+            break;
+          case 4:
+            // &4 <STRING>
+            ich1.accept(this, argu);
+            break;
+          default:
+            // should not occur !!!
+            break;
+        }
+        // #2 [ $0 "["
+        // .. . $1 [ ?0 Expression() ?1 "~" ?2 Expression() ]
+        // .. . $2 "]" ]
+        final INode seq3 = seq.elementAt(2);
+        final NodeOptional opt = (NodeOptional) seq3;
+        if (opt.present()) {
+          final NodeSequence seq4 = (NodeSequence) opt.node;
+          // $0 "["
+          final INode seq5 = seq4.elementAt(0);
+          seq5.accept(this, argu);
+          // $1 [ ?0 Expression() ?1 "~" ?2 Expression() ]
+          final INode seq6 = seq4.elementAt(1);
+          final NodeOptional opt1 = (NodeOptional) seq6;
+          if (opt1.present()) {
+            final NodeSequence seq7 = (NodeSequence) opt1.node;
+            // ?0 Expression()
+            final INode seq8 = seq7.elementAt(0);
+            seq8.accept(this, argu);
+            // ?1 "~"
+            final INode seq9 = seq7.elementAt(1);
+            seq9.accept(this, argu);
+            // ?2 Expression()
+            final INode seq10 = seq7.elementAt(2);
+            seq10.accept(this, argu);
+          }
+          // $2 "]"
+          final INode seq11 = seq4.elementAt(2);
+          seq11.accept(this, argu);
+        }
+        // #3 [ RangeDef() ]
+        final INode seq12 = seq.elementAt(3);
+        final NodeOptional opt2 = (NodeOptional) seq12;
+        if (opt2.present()) {
+          opt2.accept(this, argu);
+        }
+        break;
+      case 1:
+        // %1 RangeDef()
+        ich.accept(this, argu);
+        break;
+      default:
+        // should not occur !!!
+        break;
     }
   }
 
